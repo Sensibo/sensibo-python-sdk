@@ -70,6 +70,6 @@ if __name__ == "__main__":
         utc = sstring.replace(tzinfo=from_zone)
         localzone = utc.astimezone(to_zone)
         sdate = localzone.strftime(fmt)
-        print "Command executed at %(date)s : %(states" % { 'date' : sdate, 'state': str(ac_state['acState'])}
+        print "Command executed at %(date)s : %(state)s" % { 'date' : sdate, 'state': str(ac_state['acState'])}
     
     client.pod_change_ac_state(pod_uids[0], True, 23, 'cool', 'auto')
