@@ -100,11 +100,13 @@ class TemperatureWatcher(object):
                 self.poll()
                 time.sleep(60)
             except KeyboardInterrupt:
+                reason = 'interrupt'
+                exc = None
                 break
             except Exception as exc:
-                self.cleanup(reason='exception', exc=exc)
-            finally:
-                self.cleanup(reason='interrupt')
+                reason='exception'
+                exc=exc
+        self.cleanup(reason=reason, exc=exc)
 
 if __name__ == "__main__":
     import argparse
