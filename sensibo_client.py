@@ -78,20 +78,32 @@ class TemperatureWatcher(object):
         exc = 'no exception' if not exc else exc
         self.logger.warning('Cleanup after %r with %r!', reason, exc)
 
+    def pod_ac_state(self, pod):
+        last_ac_state = self.client.pod_ac_state(pod)
+        state = last_ac_state['acState'].get('on')
+        return state
+
     def poll(self):
         pod_uids = self.client.pod_uids()
         # FIXME: individual pod temperature support
         for pod in pod_uids:
             measurement = self.client.pod_measurement(pod)[0]
             temperature = float(measurement.get('temperature', 0))
-            if temperature >= self.high_t:
+            pod_is_on = self.pod_ac_state(pod)
+            if temperature >= self.high_t and not pod_is_on:
                 self.client.pod_change_ac_state(pod, True, self.op_t, 'cool', 'high')
-                self.logger.warning('Turning on AC as %s >= %s', temperature, self.high_t)
-            elif temperature <= self.low_t:
-                self.logger.warning('Turning off AC as %s <= %s', temperature, self.low_t)
+                self.logger.warning('Turning on AC as %sC >= %sC', temperature, self.high_t)
+            elif temperature <= self.low_t and pod_is_on:
+                self.logger.warning('Turning off AC as %sC <= %sC', temperature, self.low_t)
                 self.client.pod_change_ac_state(pod, False, self.op_t, 'cool', 'auto')
+            elif temperature >= self.high_t and pod_is_on:
+                self.logger.warning('AC is cooling to %sC, current temperature: %sC', self.low_t,
+                                    temperature)
+            elif temperature <= self.low_t and not pod_is_on:
+                self.logger.warning('AC is idle, waiting for temperature %sC to rise to %sC',
+                                    temperature, self.low_t)
             else:
-                self.logger.warning('Temperature %sC is within range: %s-%sC, noop', temperature,
+                self.logger.warning('Temperature %sC is within range: %s-%sC', temperature,
                                self.low_t, self.high_t)
 
     def run_forever(self):
@@ -106,6 +118,7 @@ class TemperatureWatcher(object):
             except Exception as exc:
                 reason='exception'
                 exc=exc
+                break
         self.cleanup(reason=reason, exc=exc)
 
 if __name__ == "__main__":
@@ -128,8 +141,8 @@ if __name__ == "__main__":
     if args.basic:
         client = SensiboClientAPI(args.apikey)
         pod_uids = client.pod_uids()
-        print ("All pod uids:", ", ".join(pod_uids))
-        print ("Pod measurement for first pod", client.pod_measurement(pod_uids[0]))
+        print ("All pod uids: %s" % str(", ".join(pod_uids)))
+        print ("Pod measurement for first pod: %s" % client.pod_measurement(pod_uids[0]))
         last_ac_state = client.pod_ac_state(pod_uids[0])
         print ("Last AC change %(success)s and was caused by %(cause)s" % { 'success': 'was successful' if last_ac_state['status'] == 'Success' else 'failed', 'cause': last_ac_state['reason'] } )
         print ("and set the ac to %s" % str(last_ac_state['acState']))
