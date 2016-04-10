@@ -114,12 +114,13 @@ class TemperatureWatcher(object):
             except KeyboardInterrupt:
                 reason = 'interrupt'
                 exc = None
+                self.cleanup(reason=reason, exc=exc)
                 break
             except Exception as exc:
                 reason='exception'
                 exc=exc
-                break
-        self.cleanup(reason=reason, exc=exc)
+                self.cleanup(reason=reason, exc=exc)
+
 
 if __name__ == "__main__":
     import argparse
