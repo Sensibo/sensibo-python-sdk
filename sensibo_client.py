@@ -101,7 +101,7 @@ class TemperatureWatcher(object):
                                     temperature)
             elif temperature <= self.low_t and not pod_is_on:
                 self.logger.warning('AC is idle, waiting for temperature %sC to rise to %sC',
-                                    temperature, self.low_t)
+                                    temperature, self.high_t)
             else:
                 self.logger.warning('Temperature %sC is within range: %s-%sC', temperature,
                                self.low_t, self.high_t)
