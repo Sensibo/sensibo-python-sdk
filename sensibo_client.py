@@ -80,7 +80,7 @@ class TemperatureWatcher(object):
 
     def pod_ac_state(self, pod):
         last_ac_state = self.client.pod_ac_state(pod)
-        state = last_ac_state['acState'].get('on')
+        state = last_ac_state['acState'].get('on', False)
         return state
 
     def poll(self):
