@@ -13,16 +13,15 @@ class SensiboClientAPI(object):
         response.raise_for_status()
         return response.json()
 
-    def _post(self, path, data, ** params):
+    def _patch(self, path, data, ** params):
         params['apiKey'] = self._api_key
-        response = requests.post(_SERVER + path, params = params, data = data)
+        response = requests.patch(_SERVER + path, params = params, data = data)
         response.raise_for_status()
         return response.json()
 
-    def pod_uids(self):
-        result = self._get("/users/me/pods")
-        pod_uids = [x['id'] for x in result['result']]
-        return pod_uids
+    def devices(self):
+        result = self._get("/users/me/pods", fields="id,room")
+        return {x['room']['name']: x['id'] for x in result['result']}
 
     def pod_measurement(self, podUid):
         result = self._get("/pods/%s/measurements" % podUid)
@@ -30,24 +29,27 @@ class SensiboClientAPI(object):
 
     def pod_ac_state(self, podUid):
         result = self._get("/pods/%s/acStates" % podUid, limit = 1, fields="status,reason,acState")
-        return result['result'][0]
+        return result['result'][0]['acState']
 
-    def pod_change_ac_state(self, podUid, on, target_temperature, mode, fan_level):
-        self._post("/pods/%s/acStates" % podUid,
-                json.dumps({'acState': {"on": on, "targetTemperature": target_temperature, "mode": mode, "fanLevel": fan_level}}))
+    def pod_change_ac_state(self, podUid, currentAcState, propertyToChange, newValue):
+        self._patch("/pods/%s/acStates/%s" % (podUid, propertyToChange),
+                json.dumps({'currentAcState': currentAcState, 'newValue': newValue}))
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Sensibo client example parser')
     parser.add_argument('apikey', type = str)
+    parser.add_argument('deviceName', type = str)
     args = parser.parse_args()
 
     client = SensiboClientAPI(args.apikey)
-    pod_uids = client.pod_uids()
-    print "All pod uids:", ", ".join(pod_uids)
-    print "Pod measurement for first pod", client.pod_measurement(pod_uids[0])
-    last_ac_state = client.pod_ac_state(pod_uids[0])
-    print "Last AC change %(success)s and was caused by %(cause)s" % { 'success': 'was successful' if last_ac_state['status'] == 'Success' else 'failed', 'cause': last_ac_state['reason'] } 
-    print "and set the ac to %s" % str(last_ac_state['acState'])
-    print "Change AC state of %s" % pod_uids[0]
-    client.pod_change_ac_state(pod_uids[0], True, 23, 'cool', 'auto')
+    devices = client.devices()
+    print "-" * 10, "devices", "-" * 10
+    print devices
+
+    uid = devices[args.deviceName]
+    ac_state = client.pod_ac_state(uid)
+    print "-" * 10, "AC State of %s" % args.deviceName, "_" * 10
+    print ac_state
+
+    client.pod_change_ac_state(uid, ac_state, "on", not ac_state['on']) 
