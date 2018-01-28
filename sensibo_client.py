@@ -82,8 +82,7 @@ if __name__ == "__main__":
         print (devices)
     except requests.exceptions.RequestException as exc:
       print ("Request failed with message %s" % exc)
-      devices = {'living room A/C': 'ntZFS9SF', 'bedroom A/C': 'wwyyJdeY', "Megan's A/C": 'f3uEc9GG'}
-      #exit(1)
+      exit(1)
  
     if(args.deviceName and not args.allDevices):
       uidList = [devices[args.deviceName]]
