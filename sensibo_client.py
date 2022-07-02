@@ -28,7 +28,7 @@ class SensiboClientAPI(object):
         return result['result']
 
     def pod_ac_state(self, podUid):
-        result = self._get("/pods/%s/acStates" % podUid, limit = 1, fields="status,reason,acState")
+        result = self._get("/pods/%s/acStates" % podUid, limit = 1, fields="acState")
         return result['result'][0]['acState']
 
     def pod_change_ac_state(self, podUid, currentAcState, propertyToChange, newValue):
